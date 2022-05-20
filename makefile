@@ -1,25 +1,22 @@
 CFLAGS=-Wall
 COMP = clang++
 
-all: Client Server 
+all: client server 
 
-Client: Client.o
-	$(COMP) $(CFLAGS) Client.o -o Client 
+client: client.o
+	$(COMP) $(CFLAGS) client.o -o client 
 
-Server: Server.o
-	$(COMP) $(CFLAGS) Server.o -o Server 
+server: server.o
+	$(COMP) $(CFLAGS) server.o -o server 
 
-test: test.o
-	$(COMP) $(CFLAGS) test.o -o test
-
-Server.o: server.cpp
+server.o: server.cpp
 	$(COMP) -c $(CFLAGS) server.cpp 
 
-Client.o: client.cpp
+client.o: client.cpp
 	$(COMP) -c $(CFLAGS) client.cpp 
 
 .PHONY: clean all
 
 clean:
-	rm *.o Client Server
+	rm *.o client server
 			

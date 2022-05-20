@@ -20,7 +20,7 @@
 #include <sys/mman.h>
 using namespace std;
 
-#define PORT "3490"  // the port users will be connecting to
+#define PORT "4080"  // the port users will be connecting to
 
 #define BACKLOG 10   // how many pending connections queue will hold
 
@@ -95,7 +95,7 @@ struct flock lock1;
 char client_message[1024];
 void stackProcess(void *arg)
 {
-
+    cout << "gf";
    int newSocket = *((int *)arg);
    recv(newSocket , client_message , 1024 , 0);
     memset (&lock1, 0, sizeof(lock1));
@@ -105,7 +105,6 @@ void stackProcess(void *arg)
    if(commnad.substr(0, 4).compare("PUSH") == 0){
        push(commnad.substr(5, commnad.length()));
    }else if(commnad.substr(0, 3).compare("POP") == 0){
-       cout << "HEYYEYE";
        pop();
    }else if(commnad.substr(0, 3).compare("TOP") == 0){
        string data = "OUTPUT: " + peek();
@@ -215,6 +214,7 @@ int main(void)
     while(1) {  // main accept() loop
         sin_size = sizeof their_addr;
         new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
+        cout << "Accepted" << endl;
         if (new_fd == -1) {
             perror("accept");
             continue;
