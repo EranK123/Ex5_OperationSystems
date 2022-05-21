@@ -16,11 +16,10 @@
 #include <arpa/inet.h>
 #include <sys/wait.h>
 #include <signal.h>
-#include <pthread.h>
 #include <sys/mman.h>
 using namespace std;
 
-#define PORT "4080"  // the port users will be connecting to
+#define PORT "3490"  // the port users will be connecting to
 
 #define BACKLOG 10   // how many pending connections queue will hold
 
@@ -29,7 +28,7 @@ using namespace std;
 // -------------- Stack Imp ----------- //
 
 struct Node {
-   string data;
+   char* data;
    struct Node *next;
 };
 
@@ -45,9 +44,15 @@ Stack *stac;
 void push(string val) {
     Node *t = (Node*)stac->loc;
     t->next = nullptr;
-    t->data = (char*)stac->loc + sizeof(Node*);
-    t->data = val;
-    if(stac->n == nullptr){
+    t->data = (char*)stac->loc + sizeof(Node);
+    int idx = 0;
+    for(int i = 0; i < val.length(); i++){
+        t->data[idx] = val[i];
+        idx++;
+    }
+    t->data[idx] = '\0';
+    
+    if(stac->n == NULL){
         stac->n = t;
     }else{
         t->next = stac->n;
@@ -57,19 +62,20 @@ void push(string val) {
 
 }
 void pop() {
-   if(stac->n==nullptr)
+    if(stac->n == nullptr){
    cout<<"Stack Underflow"<<endl;
-   else {
+   return;
+   } else {
     stac->n = stac->n->next;
     }
 }
 
-string peek(){
-    cout << "OUTPUT: ";
-    if(stac->n != NULL){
-    return stac->n->data + "\n";
+char* peek(){
+    cout << "Peek entered" << endl;
+    if(stac->n != nullptr){
+    return stac->n->data;
     }
-    return "Stack is empty\n";
+    return (char*)"Stack is empty";
 }
 
 // string display() {
@@ -93,22 +99,22 @@ string peek(){
 // -------------- Server Imp ----------- //
 struct flock lock1;
 char client_message[1024];
-void stackProcess(void *arg)
+void stackProcess(int arg)
 {
-    cout << "gf";
-   int newSocket = *((int *)arg);
-   recv(newSocket , client_message , 1024 , 0);
+   
     memset (&lock1, 0, sizeof(lock1));
     lock1.l_type = F_WRLCK;
-    fcntl (newSocket, F_SETLKW, &lock1);
+    fcntl (arg, F_SETLKW, &lock1);
+    recv(arg , client_message , 1024 , 0);
    string commnad = client_message;
    if(commnad.substr(0, 4).compare("PUSH") == 0){
        push(commnad.substr(5, commnad.length()));
    }else if(commnad.substr(0, 3).compare("POP") == 0){
        pop();
    }else if(commnad.substr(0, 3).compare("TOP") == 0){
-       string data = "OUTPUT: " + peek();
-       send(newSocket, data.c_str(), strlen(data.c_str()), 0);
+       string data = "OUTPUT: " + string(peek()) + '\n';
+       cout << "data:" << data << endl;
+       send(arg, data.c_str(), strlen(data.c_str()), 0);
    }
 //    else if(commnad.substr(0, 4).compare("DISP") == 0){
 //         //  string out = "Stack elements are: " + display() + '\n';
@@ -118,8 +124,8 @@ void stackProcess(void *arg)
 
 sleep(1);
 lock1.l_type = F_UNLCK;
-fcntl (newSocket, F_SETLKW, &lock1);
-close(newSocket);
+fcntl (arg, F_SETLKW, &lock1);
+close(arg);
 }
 
 void sigchld_handler(int s)
@@ -208,13 +214,12 @@ int main(void)
     }
 
     printf("server: waiting for connections...\n");
-    stac = (Stack*)mmap(NULL, 1024, PROT_READ | PROT_WRITE, MAP_SHARED | MAP_ANONYMOUS, -1, 0);
+    stac = (Stack*)mmap(NULL, 4096, PROT_READ | PROT_WRITE, MAP_ANONYMOUS | MAP_SHARED, -1, 0);
     stac->n = nullptr;
     stac->loc = stac + sizeof(struct Stack);
     while(1) {  // main accept() loop
         sin_size = sizeof their_addr;
         new_fd = accept(sockfd, (struct sockaddr *)&their_addr, &sin_size);
-        cout << "Accepted" << endl;
         if (new_fd == -1) {
             perror("accept");
             continue;
@@ -227,7 +232,7 @@ int main(void)
 
         if (!fork()) { // this is the child process
             close(sockfd); // child doesn't need the listener
-            stackProcess(&new_fd);
+            stackProcess(new_fd);
             close(new_fd);
             exit(0);
         }

@@ -15,7 +15,7 @@
 #include <arpa/inet.h>
 using namespace std;
 
-#define PORT "4080" // the port client will be connecting to 
+#define PORT "3490" // the port client will be connecting to 
 
 #define MAXDATASIZE 100 // max number of bytes we can get at once 
 
@@ -65,7 +65,6 @@ int main(int argc, char *argv[])
 
         if (connect(sockfd, p->ai_addr, p->ai_addrlen) == -1) {
             close(sockfd);
-            perror("client: connect");
             continue;
         }
 
